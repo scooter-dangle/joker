@@ -58,6 +58,7 @@ func (c *container) Stop() {
 	if err != nil {
 		log.Printf("[error]: failed to stop %s\n", c.name)
 	}
+	// lxc-wait for STOPPED?
 }
 
 func (c *container) executeCurl(ip string) string {

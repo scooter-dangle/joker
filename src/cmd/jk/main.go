@@ -3,15 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/rand"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
 const numContainers = 5
-
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
 
 func main() {
 	var containers []*container
@@ -32,14 +30,34 @@ func main() {
 
 	cmdChans := startCurlExecutors(containers, startLog())
 
-	for i := 0; i < 19; i++ {
-		cmdChans[rand.Intn(numContainers)] <- []byte(containers[rand.Intn(len(containers))].ip)
-	}
+	// curl connectivity matrix generator
+	go func(containers []*container, cmdChans []chan command) {
+		for {
+			for i:= 0; i < len(containers); i++ {
+				for j := 0; j < len(containers); j++ {
+					cmdChans[i] <- []byte(containers[j].ip)
+				}
+			}
 
-	time.Sleep(10 * time.Second)
+			time.Sleep(4 * time.Second)
+		}
+	}(containers, cmdChans)
 
-	for _, c := range containers {
-		c.Stop()
+	signalChan := make(chan os.Signal, 100)
+	signal.Notify(signalChan, syscall.SIGINT)
+	for {
+		select {
+		case sig := <-signalChan:
+			switch sig {
+			case syscall.SIGINT:
+				for _, c := range containers {
+					c.Stop()
+				}
+				os.Exit(0)
+			default:
+			}
+		}
+
 	}
 }
 
