@@ -43,12 +43,8 @@ func (c *container) findIp() {
 retry:
 	cmd := exec.Command("sudo", "lxc-attach", "-n", c.name, "--", "ip", "-4", "addr", "show", "eth0")
 	ipaddrOut, err := cmd.Output()
-	if err != nil {
-		log.Fatalf("[error]: could not attach to %s\n", c.name)
-	}
-
 	match := ipRegexp.FindSubmatch(ipaddrOut)
-	if match == nil && retriesRemaining >= 0 {
+	if (err != nil || match == nil) && retriesRemaining >= 0 {
 		retriesRemaining--
 		time.Sleep(300 * time.Millisecond)
 		goto retry
