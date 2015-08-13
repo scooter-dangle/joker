@@ -61,8 +61,8 @@ func main() {
 	}
 }
 
-func startLog() chan status {
-	logChan := make(chan status, 200)
+func startLog() chan *status {
+	logChan := make(chan *status, 200)
 	go func() {
 		for {
 			select {
@@ -71,22 +71,36 @@ func startLog() chan status {
 					return
 				}
 
-				log.Printf("[status]: %s\n", update)
+				log.Printf("[status]: %s\n", update.summary)
 			}
 		}
-
 	}()
 	return logChan
 }
 
 type command []byte
-type status []byte
+type status struct {
+	src string
+	dest string
+	summary string
+	outcome bool
+}
 
-func startCurlExecutors(containers []*container, output chan status) []chan command {
+func containerNameByIp(containers []*container, ip string) string {
+	for _, c := range containers {
+		if c.ip == ip {
+			return c.name
+		}
+	}
+	return ""
+}
+
+
+func startCurlExecutors(containers []*container, output chan *status) []chan command {
 	var inChans []chan command
-	for i, c := range containers {
+	for _, c := range containers {
 		inChan := make(chan command)
-		go func(i int, c *container, in chan command, out chan status) {
+		go func(c *container, in chan command, out chan *status) {
 			for {
 				select {
 				case ip := <-in:
@@ -94,12 +108,21 @@ func startCurlExecutors(containers []*container, output chan status) []chan comm
 						return
 					}
 
-					httpStatus := c.executeCurl(string(ip))
-					out <-status([]byte(fmt.Sprintf("curl %s from node %d status %s", ip, i, httpStatus)))
+					success := false
+					if "200" == c.executeCurl(string(ip)) {
+						success = true
+					}
+
+					out <-&status{
+						src: c.name,
+						dest: containerNameByIp(containers, string(ip)),
+						summary: fmt.Sprintf("curl %s from %s %t", ip, c.name, success),
+						outcome: success,
+					}
 				}
 
 			}
-		}(i, c, inChan, output)
+		}(c, inChan, output)
 		inChans = append(inChans, inChan)
 	}
 	return inChans
