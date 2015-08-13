@@ -30,18 +30,17 @@ func main() {
 		log.Printf("%s\n", c.ip)
 	}
 
-	for _, c := range containers {
-		c.Stop()
-	}
-
-	// set up main executors and task generator
-	cmdChans := startCurlExecutors(numContainers, startLog())
+	cmdChans := startCurlExecutors(containers, startLog())
 
 	for i := 0; i < 19; i++ {
-		cmdChans[rand.Intn(numContainers)] <- []byte("Update ")
+		cmdChans[rand.Intn(numContainers)] <- []byte(containers[rand.Intn(len(containers))].ip)
 	}
 
 	time.Sleep(10 * time.Second)
+
+	for _, c := range containers {
+		c.Stop()
+	}
 }
 
 func startLog() chan status {
@@ -65,25 +64,24 @@ func startLog() chan status {
 type command []byte
 type status []byte
 
-func startCurlExecutors(n int, output chan status) []chan command {
+func startCurlExecutors(containers []*container, output chan status) []chan command {
 	var inChans []chan command
-	for i := 0; i < n; i++ {
+	for i, c := range containers {
 		inChan := make(chan command)
-		go func(i int, in chan command, out chan status) {
+		go func(i int, c *container, in chan command, out chan status) {
 			for {
 				select {
-				case c := <-in:
-					if c == nil {
+				case ip := <-in:
+					if ip == nil {
 						return
 					}
 
-					out <-status(append(c, []byte(fmt.Sprintf("from node %d", i))...))
+					httpStatus := c.executeCurl(string(ip))
+					out <-status([]byte(fmt.Sprintf("curl %s from node %d status %s", ip, i, httpStatus)))
 				}
 
 			}
-			// will eventually do the lxc-attach business with curl
-			// but just annotating and forwarding for now
-		}(i, inChan, output)
+		}(i, c, inChan, output)
 		inChans = append(inChans, inChan)
 	}
 	return inChans

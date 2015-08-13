@@ -60,3 +60,12 @@ func (c *container) Stop() {
 	}
 }
 
+func (c *container) executeCurl(ip string) string {
+	cmd := exec.Command("sudo", "lxc-attach", "-n", c.name, "--", "curl", ip, "-s", "-o", "/dev/null", "-w", "%{http_code}", "-m", "1")
+	httpStatus, err := cmd.Output()
+	if err != nil {
+		log.Fatalf("[error]: could not attach to %s\n", c.name)
+	}
+	return string(httpStatus)
+}
+
