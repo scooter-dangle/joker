@@ -7,11 +7,43 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/nsf/termbox-go"
 )
 
 const numContainers = 5
 
 func main() {
+	f, err := os.OpenFile("jk.log", os.O_APPEND | os.O_CREATE + os.O_RDWR, 0666)
+	if err != nil {
+		fmt.Printf("[error]: could not open log file: %v", err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+
+	signalChan := make(chan os.Signal, 100)
+	signal.Notify(signalChan, syscall.SIGINT)
+
+	// start termbox
+	err = termbox.Init()
+	if err != nil {
+		log.Printf("[error]: could not start termbox: %v\n", err)
+	}
+	defer termbox.Close()
+
+	go func() {
+		for {
+			e := termbox.PollEvent()
+			if e.Type == termbox.EventKey {
+				if e.Key == termbox.KeyCtrlC {
+					signalChan <-syscall.SIGINT
+					termbox.Close()
+					return
+				}
+			}
+		}
+	}()
+
 	var containers []*container
 	for i := 0; i < numContainers; i++ {
 		containers = append(containers, &container{name: fmt.Sprintf("n%d", i)})
@@ -43,8 +75,6 @@ func main() {
 		}
 	}(containers, cmdChans)
 
-	signalChan := make(chan os.Signal, 100)
-	signal.Notify(signalChan, syscall.SIGINT)
 	for {
 		select {
 		case sig := <-signalChan:
@@ -53,6 +83,7 @@ func main() {
 				for _, c := range containers {
 					c.Stop()
 				}
+				f.Close()
 				os.Exit(0)
 			default:
 			}
