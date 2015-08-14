@@ -49,6 +49,10 @@ retry:
 		time.Sleep(300 * time.Millisecond)
 		goto retry
 	}
+	if len(match) < 2 {
+		retriesRemaining--
+		goto retry
+	}
 	c.ip = string(match[1])
 }
 

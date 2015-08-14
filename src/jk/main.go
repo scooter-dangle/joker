@@ -19,6 +19,9 @@ var commands = []*Command{
 	cmdWatch,
 }
 
+const defaultPort = 31415
+const serverIP = "127.0.0.1"
+
 var defaultCommand = cmdWatch
 
 var exitMu sync.Mutex

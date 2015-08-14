@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -34,6 +36,13 @@ func runDaemon(c *Command, args []string) {
 	defer f.Close()
 	log.SetOutput(f)
 
+	l, err := net.Listen("tcp", "localhost:" + strconv.Itoa(defaultPort))
+	if err != nil {
+		fmt.Printf("[error]: could not open tcp socket: %v\n", err)
+		os.Exit(1)
+	}
+	defer l.Close()
+
 	signalChan := make(chan os.Signal, 100)
 	signal.Notify(signalChan, syscall.SIGINT)
 
@@ -49,11 +58,7 @@ func runDaemon(c *Command, args []string) {
 		}
 	}
 
-	for _, c := range containers {
-		log.Printf("%s\n", c.ip)
-	}
-
-	cmdChans := startCurlExecutors(containers, startLog())
+	cmdChans := startCurlExecutors(containers, startLog(l))
 
 	// curl connectivity matrix generator
 	go func(containers []*container, cmdChans []chan command) {
@@ -85,9 +90,35 @@ func runDaemon(c *Command, args []string) {
 	}
 }
 
-func startLog() chan *status {
+func startLog(l net.Listener) chan *status {
 	logChan := make(chan *status, 200)
+	clientChan := make(chan net.Conn, 10)
 	go func() {
+		var delay time.Duration
+		for {
+			client, err := l.Accept()
+			if err != nil {
+				if ne, ok := err.(net.Error); ok && ne.Temporary() {
+					if delay == 0 {
+						delay = 5 * time.Millisecond
+					} else {
+						delay *= 2
+					}
+					if max := 1 * time.Second; delay > max {
+						delay = max
+					}
+					time.Sleep(delay)
+					continue
+				}
+				return
+			}
+			delay = 0
+			clientChan <- client
+		}
+	}()
+
+	go func() {
+		var clients []net.Conn
 		for {
 			select {
 			case update := <-logChan:
@@ -95,6 +126,20 @@ func startLog() chan *status {
 					return
 				}
 				log.Printf("[status]: %s\n", update.summary)
+				for _, c := range clients { // TODO: should this be done in goroutines?
+					msg := fmt.Sprintf("%s %s %t\n", update.src, update.dest, update.outcome) // TODO: pick a better serialization protocol
+					n, err := c.Write([]byte(msg))
+					if err != nil {
+						continue
+					}
+					if n != len(msg) {
+						log.Println("whole message not sent.")
+						// TODO: clearly this should actually try to send the rest of the message...
+					}
+				}
+			case client := <-clientChan:
+				clients = append(clients, client) // TODO: clearly not the best data structure (think removes). perhaps a map would be better
+			default:
 			}
 		}
 	}()
