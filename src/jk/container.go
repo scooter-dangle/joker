@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -36,24 +35,22 @@ func (c *container) Start() bool {
 	return true
 }
 
-var ipRegexp = regexp.MustCompile(`(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\/24`)
-// not perfect, but close enough. allows for things like 442.0.0.0 the goal is not to verify that ip addr provides valid ip addresses though.
 func (c *container) findIp() {
 	retriesRemaining := 3
 retry:
-	cmd := exec.Command("sudo", "lxc-attach", "-n", c.name, "--", "ip", "-4", "addr", "show", "eth0")
-	ipaddrOut, err := cmd.Output()
-	match := ipRegexp.FindSubmatch(ipaddrOut)
-	if (err != nil || match == nil) && retriesRemaining >= 0 {
+	cmd := exec.Command("sudo", "lxc-info", "-n", c.name, "-i")
+	infoOut, err := cmd.Output()
+	infoOutSplit := strings.Split(string(infoOut), ":")
+	if (err != nil || len(infoOutSplit) != 2) && retriesRemaining >= 0 {
 		retriesRemaining--
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(800 * time.Millisecond)
 		goto retry
 	}
-	if len(match) < 2 {
-		retriesRemaining--
-		goto retry
+	if len(infoOutSplit) != 2 {
+		log.Println("[error] could not find IP address for %s\n", c.name)
+		return
 	}
-	c.ip = string(match[1])
+	c.ip = strings.TrimSpace(infoOutSplit[1])
 }
 
 func (c *container) Stop() {
