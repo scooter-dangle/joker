@@ -141,6 +141,7 @@ func startLog(l net.Listener) chan *status {
 			case client := <-clientChan:
 				clients = append(clients, client) // TODO: clearly not the best data structure (think removes). perhaps a map would be better
 			default:
+				time.Sleep(30*time.Millisecond) // TODO: revisit duration of sleep. arbitrarily chosen to reduce wasted cpu cycles.
 			}
 		}
 	}()
