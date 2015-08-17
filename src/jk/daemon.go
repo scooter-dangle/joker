@@ -29,13 +29,6 @@ daemon supports the following flags:
 }
 
 func runDaemon(c *Command, args []string) {
-	f, err := os.OpenFile("jk.log", os.O_APPEND | os.O_CREATE + os.O_RDWR, 0666)
-	if err != nil {
-		fmt.Printf("[error]: could not open log file: %v", err)
-	}
-	defer f.Close()
-	log.SetOutput(f)
-
 	l, err := net.Listen("tcp", "localhost:" + strconv.Itoa(defaultPort))
 	if err != nil {
 		fmt.Printf("[error]: could not open tcp socket: %v\n", err)
@@ -81,7 +74,6 @@ func runDaemon(c *Command, args []string) {
 				for _, c := range containers {
 					c.Stop()
 				}
-				f.Close()
 				os.Exit(0)
 			default:
 			}
