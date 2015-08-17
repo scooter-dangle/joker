@@ -60,13 +60,16 @@ retry:
 }
 
 func (c *container) Stop() {
-	close(c.cmd)
 	cmd := exec.Command("sudo", "lxc-stop", "-n", c.name)
 	err := cmd.Run()
 	if err != nil {
 		log.Printf("[error]: failed to stop %s\n", c.name)
 	}
-	// lxc-wait for STOPPED?
+	cmd = exec.Command("sudo", "lxc-wait", "-n", c.name, "-s", "STOPPED", "-t", "20") // TODO: Make this timeout a package variable of flag.
+	err = cmd.Run()
+	if err != nil {
+		log.Printf("[error]: timeout (20 sec) before %s reached STOPPED state.\nRetry with a longer timeout.", c.name)
+	}
 }
 
 func (c *container) executeCurl(ip string) string {
