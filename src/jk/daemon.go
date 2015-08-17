@@ -36,25 +36,12 @@ func runDaemon(c *Command, args []string) {
 	}
 	defer l.Close()
 
+	containers := launchContainers(numContainers)
+	cmdChans := startCurlExecutors(containers, startLog(l))
+	curlConnectivityMatrixGenerator(containers, cmdChans)
+
 	signalChan := make(chan os.Signal, 100)
 	signal.Notify(signalChan, syscall.SIGINT)
-
-	containers := launchContainers(numContainers)
-
-	cmdChans := startCurlExecutors(containers, startLog(l))
-
-	// curl connectivity matrix generator
-	go func(containers []*container, cmdChans []chan command) {
-		for {
-			for i:= 0; i < len(containers); i++ {
-				for j := 0; j < len(containers); j++ {
-					cmdChans[i] <- []byte(containers[j].ip)
-				}
-			}
-
-			time.Sleep(4 * time.Second)
-		}
-	}(containers, cmdChans)
 
 	for {
 		select {
@@ -69,6 +56,18 @@ func runDaemon(c *Command, args []string) {
 			}
 		}
 
+	}
+}
+
+func curlConnectivityMatrixGenerator(containers []*container, cmdChans []chan command) {
+	for {
+		for i:= 0; i < len(containers); i++ {
+			for j := 0; j < len(containers); j++ {
+				cmdChans[i] <- []byte(containers[j].ip)
+			}
+		}
+
+		time.Sleep(4 * time.Second)
 	}
 }
 
