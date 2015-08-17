@@ -39,17 +39,7 @@ func runDaemon(c *Command, args []string) {
 	signalChan := make(chan os.Signal, 100)
 	signal.Notify(signalChan, syscall.SIGINT)
 
-	var containers []*container
-	for i := 0; i < numContainers; i++ {
-		containers = append(containers, &container{name: fmt.Sprintf("n%d", i)})
-	}
-
-	for _, c := range containers {
-		started := c.Start()
-		if !started {
-			log.Printf("[error]: failed to start %s\n", c.name)
-		}
-	}
+	containers := launchContainers(numContainers)
 
 	cmdChans := startCurlExecutors(containers, startLog(l))
 
@@ -80,6 +70,21 @@ func runDaemon(c *Command, args []string) {
 		}
 
 	}
+}
+
+func launchContainers(n int) []*container {
+	var containers []*container
+	for i := 0; i < n; i++ {
+		containers = append(containers, &container{name: fmt.Sprintf("n%d", i)})
+	}
+
+	for _, c := range containers {
+		started := c.Start()
+		if !started {
+			log.Printf("[error]: failed to start %s\n", c.name)
+		}
+	}
+	return containers
 }
 
 func startLog(l net.Listener) chan *status {
