@@ -34,7 +34,7 @@ func runDaemon(c *Command, args []string) {
 
 	containers := launchContainers(numContainers)
 	startCurlExecutors(containers, startLog(l))
-	curlConnectivityMatrixGenerator(containers)
+	go curlConnectivityMatrixGenerator(containers)
 
 	signalChan := make(chan os.Signal, 100)
 	signal.Notify(signalChan, syscall.SIGINT)
