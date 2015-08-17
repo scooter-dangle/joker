@@ -29,11 +29,7 @@ daemon supports the following flags:
 }
 
 func runDaemon(c *Command, args []string) {
-	l, err := net.Listen("tcp", "localhost:" + strconv.Itoa(defaultPort))
-	if err != nil {
-		fmt.Printf("[error]: could not open tcp socket: %v\n", err)
-		os.Exit(1)
-	}
+	l := startDisplaySocket()
 	defer l.Close()
 
 	containers := launchContainers(numContainers)
@@ -57,6 +53,15 @@ func runDaemon(c *Command, args []string) {
 		}
 
 	}
+}
+
+func startDisplaySocket() net.Listener {
+	l, err := net.Listen("tcp", "localhost:" + strconv.Itoa(defaultPort))
+	if err != nil {
+		fmt.Printf("[error]: could not open tcp socket: %v\n", err)
+		os.Exit(1)
+	}
+	return l
 }
 
 func curlConnectivityMatrixGenerator(containers []*container, cmdChans []chan command) {
