@@ -40,7 +40,7 @@ func (c *container) Start() bool {
 }
 
 func (c *container) findIp() {
-	retriesRemaining := 3
+	retriesRemaining := 30 // TODO: should this be a counter or a total timeout?
 retry:
 	cmd := exec.Command("sudo", "lxc-info", "-n", c.name, "-i")
 	infoOut, err := cmd.Output()
