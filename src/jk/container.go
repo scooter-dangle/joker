@@ -10,9 +10,11 @@ import (
 type container struct {
 	name string
 	ip string
+	cmd chan command
 }
 
 func (c *container) Start() bool {
+	c.cmd = make(chan command, 25)
 	cmd := exec.Command("sudo", "lxc-info", "-n", c.name, "-s")
 	info, err := cmd.Output()
 	if err != nil {
@@ -58,6 +60,7 @@ retry:
 }
 
 func (c *container) Stop() {
+	close(c.cmd)
 	cmd := exec.Command("sudo", "lxc-stop", "-n", c.name)
 	err := cmd.Run()
 	if err != nil {

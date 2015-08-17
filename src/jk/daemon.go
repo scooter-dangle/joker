@@ -33,8 +33,8 @@ func runDaemon(c *Command, args []string) {
 	defer l.Close()
 
 	containers := launchContainers(numContainers)
-	cmdChans := startCurlExecutors(containers, startLog(l))
-	curlConnectivityMatrixGenerator(containers, cmdChans)
+	startCurlExecutors(containers, startLog(l))
+	curlConnectivityMatrixGenerator(containers)
 
 	signalChan := make(chan os.Signal, 100)
 	signal.Notify(signalChan, syscall.SIGINT)
@@ -64,11 +64,11 @@ func startDisplaySocket() net.Listener {
 	return l
 }
 
-func curlConnectivityMatrixGenerator(containers []*container, cmdChans []chan command) {
+func curlConnectivityMatrixGenerator(containers map[string]*container) {
 	for {
-		for i:= 0; i < len(containers); i++ {
-			for j := 0; j < len(containers); j++ {
-				cmdChans[i] <- []byte(containers[j].ip)
+		for _, dest := range containers {
+			for _, src := range containers {
+				src.cmd <- []byte(dest.ip)
 			}
 		}
 
@@ -76,17 +76,16 @@ func curlConnectivityMatrixGenerator(containers []*container, cmdChans []chan co
 	}
 }
 
-func launchContainers(n int) []*container {
-	var containers []*container
+func launchContainers(n int) map[string]*container {
+	containers := make(map[string] *container)
 	for i := 0; i < n; i++ {
-		containers = append(containers, &container{name: fmt.Sprintf("n%d", i)})
-	}
-
-	for _, c := range containers {
+		c := &container{name: fmt.Sprintf("n%d", i)}
 		started := c.Start()
 		if !started {
 			log.Printf("[error]: failed to start %s\n", c.name)
+			continue
 		}
+		containers[c.name] = c
 	}
 	return containers
 }
@@ -150,7 +149,7 @@ func startLog(l net.Listener) chan *status {
 
 type command []byte
 
-func containerNameByIp(containers []*container, ip string) string {
+func containerNameByIp(containers map[string]*container, ip string) string {
 	for _, c := range containers {
 		if c.ip == ip {
 			return c.name
@@ -160,14 +159,12 @@ func containerNameByIp(containers []*container, ip string) string {
 }
 
 
-func startCurlExecutors(containers []*container, output chan *status) []chan command {
-	var inChans []chan command
+func startCurlExecutors(containers map[string]*container, output chan *status) {
 	for _, c := range containers {
-		inChan := make(chan command)
-		go func(c *container, in chan command, out chan *status) {
+		go func(c *container, out chan *status) {
 			for {
 				select {
-				case ip := <-in:
+				case ip := <-c.cmd:
 					if ip == nil {
 						return
 					}
@@ -186,8 +183,6 @@ func startCurlExecutors(containers []*container, output chan *status) []chan com
 				}
 
 			}
-		}(c, inChan, output)
-		inChans = append(inChans, inChan)
+		}(c, output)
 	}
-	return inChans
 }
