@@ -13,14 +13,13 @@ type container struct {
 }
 
 func (c *container) Start() bool {
-	// check that container exists and is not running
 	cmd := exec.Command("sudo", "lxc-info", "-n", c.name, "-s")
 	info, err := cmd.Output()
 	if err != nil {
 		log.Fatalf("[error]: %s does not exist. create container and retry.\n", c.name)
 		return false
 	}
-	if strings.Contains(string(info), "RUNNING") { // TODO: handle other container states
+	if strings.Contains(string(info), "RUNNING") {
 		log.Printf("[info]: container named %s already running.\n", c.name)
 	} else {
 		cmd = exec.Command("sudo", "lxc-start", "-n", c.name)
@@ -28,6 +27,11 @@ func (c *container) Start() bool {
 		if err != nil {
 			log.Fatalf("[error]: could not start %s\n", c.name)
 			return false
+		}
+		cmd = exec.Command("sudo", "lxc-wait", "-n", c.name, "-s", "RUNNING", "-t", "20") // TODO: Make this timeout a package variable of flag.
+		err = cmd.Run()
+		if err != nil {
+			log.Fatalf("[error]: timeout (20 sec) before %s reached RUNNING state.\nRetry with a longer timeout.", c.name)
 		}
 	}
 
