@@ -122,19 +122,19 @@ func drawString(s string, x0, y0 int, fg termbox.Attribute) {
 func drawGrid() {
 	// print initial grid and axes
 	drawString("   from\\to", 0, 0, fgColor)
-	termbox.SetCell(x0, y0, '+', fgColor, bgColor)
+	drawString("+", x0, y0, fgColor)
 	for i := 0; i <= numContainers; i++ {
 		for j := 0; j <= numContainers; j++ {
 			drawString("----+", x0+5*j, y0+2*i, fgColor)
-			termbox.SetCell(x0+5*j+4, y0+(2*i-1), '|', fgColor, bgColor)
+			drawString("|", x0+5*j+4, y0+(2*i-1), fgColor)
 		}
 	}
 	for i := 0; i < numContainers; i++ {
-		termbox.SetCell(x0+6+5*i, y0-1, 'n', fgColor, bgColor)
-		termbox.SetCell(x0+7+5*i, y0-1, rune(i+48), fgColor, bgColor)
+		drawString("n", x0+6+5*i, y0-1, fgColor)
+		drawString(strconv.Itoa(i), x0+7+5*i, y0-1, fgColor)
 
-		termbox.SetCell(x0+1, y0+2*i+1, 'n', fgColor, bgColor)
-		termbox.SetCell(x0+2, y0+2*i+1, rune(i+48), fgColor, bgColor)
+		drawString("n", x0+1, y0+2*i+1, fgColor)
+		drawString(strconv.Itoa(i), x0+2, y0+2*i+1, fgColor)
 	}
 	termbox.HideCursor()
 	termbox.Flush()
