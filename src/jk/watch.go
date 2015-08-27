@@ -31,6 +31,9 @@ watch supports the following flags:
 `,
 }
 
+var fgColor = termbox.ColorWhite
+var bgColor = termbox.ColorBlack
+
 func runWatch(c *Command, args []string) {
 	signalChan := make(chan os.Signal, 100)
 	signal.Notify(signalChan, syscall.SIGINT)
@@ -119,20 +122,20 @@ func drawString(s string, x0, y0 int, fg, bg termbox.Attribute) {
 
 func drawGrid() {
 	// print initial grid and axes
-	drawString("   from\\to", 0, 0, termbox.ColorWhite, termbox.ColorBlack)
-	termbox.SetCell(x0, y0, '+', termbox.ColorWhite, termbox.ColorBlack)
+	drawString("   from\\to", 0, 0, fgColor, bgColor)
+	termbox.SetCell(x0, y0, '+', fgColor, bgColor)
 	for i := 0; i <= numContainers; i++ {
 		for j := 0; j <= numContainers; j++ {
-			drawString("----+", x0 + 5*j, y0 + 2*i, termbox.ColorWhite, termbox.ColorBlack)
-			termbox.SetCell(x0 + 5*j + 4, y0 + (2*i-1), '|', termbox.ColorWhite, termbox.ColorBlack)
+			drawString("----+", x0+5*j, y0+2*i, fgColor, bgColor)
+			termbox.SetCell(x0+5*j+4, y0+(2*i-1), '|', fgColor, bgColor)
 		}
 	}
 	for i := 0; i < numContainers; i++ {
-		termbox.SetCell(x0 + 6 + 5*i, y0-1, 'n', termbox.ColorWhite, termbox.ColorBlack)
-		termbox.SetCell(x0 + 7 + 5*i, y0-1, rune(i+48), termbox.ColorWhite, termbox.ColorBlack)
+		termbox.SetCell(x0+6+5*i, y0-1, 'n', fgColor, bgColor)
+		termbox.SetCell(x0+7+5*i, y0-1, rune(i+48), fgColor, bgColor)
 
-		termbox.SetCell(x0 + 1, y0 + 2*i + 1, 'n', termbox.ColorWhite, termbox.ColorBlack)
-		termbox.SetCell(x0 + 2, y0 + 2*i + 1, rune(i+48), termbox.ColorWhite, termbox.ColorBlack)
+		termbox.SetCell(x0+1, y0+2*i+1, 'n', fgColor, bgColor)
+		termbox.SetCell(x0+2, y0+2*i+1, rune(i+48), fgColor, bgColor)
 	}
 	termbox.HideCursor()
 	termbox.Flush()
@@ -147,8 +150,7 @@ func drawStatus(s status) {
 		fg = termbox.ColorGreen
 	}
 
-	termbox.SetCell(x, y, '█', fg, termbox.ColorBlack)
-	termbox.SetCell(x+1, y, '█', fg, termbox.ColorBlack)
+	drawString("██", x, y, fg, bgColor)
 	termbox.Flush()
 }
 
