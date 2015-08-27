@@ -94,11 +94,14 @@ func startTermbox(signalChan chan os.Signal) {
 	go func() {
 		for {
 			e := termbox.PollEvent()
-			if e.Type == termbox.EventKey {
+			switch e.Type {
+			case termbox.EventKey:
 				if e.Key == termbox.KeyCtrlC {
-					signalChan <-syscall.SIGINT
+					signalChan <- syscall.SIGINT
 					return
 				}
+			case termbox.EventResize:
+				drawGrid()
 			}
 		}
 	}()
