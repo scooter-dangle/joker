@@ -111,23 +111,20 @@ func startTermbox(signalChan chan os.Signal) {
 const x0 = 8
 const y0 = 2
 
+func drawString(s string, x0, y0 int, fg, bg termbox.Attribute) {
+	for i, c := range s {
+		termbox.SetCell(x0 + i, y0, c, fg, bg)
+	}
+}
+
 func drawGrid() {
 	// print initial grid and axes
-	termbox.SetCell(3, 0, 'f', termbox.ColorWhite, termbox.ColorBlack)
-	termbox.SetCell(4, 0, 'r', termbox.ColorWhite, termbox.ColorBlack)
-	termbox.SetCell(5, 0, 'o', termbox.ColorWhite, termbox.ColorBlack)
-	termbox.SetCell(6, 0, 'm', termbox.ColorWhite, termbox.ColorBlack)
-	termbox.SetCell(7, 0, '\\', termbox.ColorWhite, termbox.ColorBlack)
-	termbox.SetCell(8, 0, 't', termbox.ColorWhite, termbox.ColorBlack)
-	termbox.SetCell(9, 0, 'o', termbox.ColorWhite, termbox.ColorBlack)
+	drawString("   from\\to", 0, 0, termbox.ColorWhite, termbox.ColorBlack)
 	termbox.SetCell(x0, y0, '+', termbox.ColorWhite, termbox.ColorBlack)
 	for i := 0; i <= numContainers; i++ {
 		for j := 0; j <= numContainers; j++ {
-			for k := 0; k < 4; k++ {
-				termbox.SetCell(x0 + 5*j + k, y0 + 2*i, '-', termbox.ColorWhite, termbox.ColorBlack)
-			}
+			drawString("----+", x0 + 5*j, y0 + 2*i, termbox.ColorWhite, termbox.ColorBlack)
 			termbox.SetCell(x0 + 5*j + 4, y0 + (2*i-1), '|', termbox.ColorWhite, termbox.ColorBlack)
-			termbox.SetCell(x0 + 5*j + 4, y0 + 2*i, '+', termbox.ColorWhite, termbox.ColorBlack)
 		}
 	}
 	for i := 0; i < numContainers; i++ {
