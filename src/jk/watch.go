@@ -114,19 +114,19 @@ func startTermbox(signalChan chan os.Signal) {
 const x0 = 8
 const y0 = 2
 
-func drawString(s string, x0, y0 int, fg, bg termbox.Attribute) {
+func drawString(s string, x0, y0 int, fg termbox.Attribute) {
 	for i, c := range s {
-		termbox.SetCell(x0 + i, y0, c, fg, bg)
+		termbox.SetCell(x0+i, y0, c, fg, bgColor)
 	}
 }
 
 func drawGrid() {
 	// print initial grid and axes
-	drawString("   from\\to", 0, 0, fgColor, bgColor)
+	drawString("   from\\to", 0, 0, fgColor)
 	termbox.SetCell(x0, y0, '+', fgColor, bgColor)
 	for i := 0; i <= numContainers; i++ {
 		for j := 0; j <= numContainers; j++ {
-			drawString("----+", x0+5*j, y0+2*i, fgColor, bgColor)
+			drawString("----+", x0+5*j, y0+2*i, fgColor)
 			termbox.SetCell(x0+5*j+4, y0+(2*i-1), '|', fgColor, bgColor)
 		}
 	}
@@ -150,7 +150,7 @@ func drawStatus(s status) {
 		fg = termbox.ColorGreen
 	}
 
-	drawString("██", x, y, fg, bgColor)
+	drawString("██", x, y, fg)
 	termbox.Flush()
 }
 
