@@ -53,7 +53,6 @@ func runWatch(c *Command, args []string) {
 			default:
 			}
 		}
-
 	}
 }
 
